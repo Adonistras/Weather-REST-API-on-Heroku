@@ -1,0 +1,71 @@
+version: "3.9"
+
+services:
+  db:
+    restart: always
+    container_name: Weather_database
+    image: postgres:14.5
+    environment:
+      POSTGRES_USER: 'postgres'
+      POSTGRES_PASSWORD: 'filippos3dg'
+      POSTGRES_DB: 'adonistras_db'
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/home/adonistras/postgresql/data
+  django:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    restart: always
+    container_name: weather_app
+    command: bash -c "python /home/adonistras/app/WeatherAPP/manage.py makemigrations --noinput &&
+              python /home/adonistras/app/WeatherAPP/manage.py migrate --noinput &&
+              python /home/adonistras/app/WeatherAPP/manage.py collectstatic --noinput &&
+              python /home/adonistras/app/WeatherAPP/manage.py 0.0.0.0:8000"
+    volumes:
+      - .:/home/adonistras/app/WeatherAPP
+    ports:
+      - '8000:8000'
+    depends_on:
+      - db
+  redis:
+    container_name: weather_redis
+    image: redis
+    restart: always
+    ports:
+      - "6439:6439"
+    depends_on:
+      - django
+  celery:
+    build: .
+    image: celery
+    command: celery -A WeatherAPI worker -l INFO
+    volumes:
+      - .:/home/adonistras/app/WeatherAPP
+    depends_on:
+      - django
+      - redis
+  celery-beat:
+    image: celerybeat
+    container_name: weather_beat
+    restart: always
+    command: "celery -A WeatherAPI beat -l info"
+    volumes:
+      - .:/home/adonistras/app/WeatherAPP
+  flower:
+    image: mher/flower
+    container_name: weather_flower
+    restart: always
+    command: "celery flower -A WeatherAPI --broker=redis://localhost:6379/0"
+    volumes:
+      - .:/home/adonistras/app/WeatherAPP
+    ports:
+      - "5555:5555"
+    environment:
+      CELERY_BROKER_URL: redis://redis
+      CELERY_RESULT_BACKEND: redis://redis
+    depends_on:
+        - celery
+volumes:
+  postgres_data:
