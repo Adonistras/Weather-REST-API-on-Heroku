@@ -11,7 +11,7 @@ app.autodiscover_tasks()
 app.conf.beat_schedule = {
     'update_every_hour_weather': {
         'task': 'Update_weather',
-        'schedule': crontab(minute=0, hour='*/1'),
+        'schedule': crontab(minute=0, hour=1),
     },
     'send_mail_every_evening': {
         'task': 'Send_mail',

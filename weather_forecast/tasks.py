@@ -1,12 +1,10 @@
 from WeatherAPI.celery import app
-from WeatherAPI.settings import EMAIL_HOST_USER
 from .models import WeatherForecast
-from django.core.mail import EmailMultiAlternatives, get_connection, send_mail
+from django.core.mail import EmailMultiAlternatives, get_connection
 from django.template.loader import render_to_string
 from user.models import UserAPI
 from weather.models import Weather
 from city.models import City
-
 
 
 @app.task(name='Send_mail')
